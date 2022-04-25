@@ -17,11 +17,10 @@ import dk.sdu.mmmi.mdsd.math.VariableUse;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-import javax.swing.JOptionPane;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.resource.Resource;
+import org.eclipse.xtend2.lib.StringConcatenation;
 import org.eclipse.xtext.generator.AbstractGenerator;
 import org.eclipse.xtext.generator.IFileSystemAccess2;
 import org.eclipse.xtext.generator.IGeneratorContext;
@@ -38,24 +37,64 @@ public class MathGenerator extends AbstractGenerator {
   @Override
   public void doGenerate(final Resource resource, final IFileSystemAccess2 fsa, final IGeneratorContext context) {
     final MathExp math = Iterators.<MathExp>filter(resource.getAllContents(), MathExp.class).next();
-    final Map<String, Integer> result = MathGenerator.compute(math);
-    this.displayPanel(result);
+    this.generateFile(math, fsa);
   }
   
-  public void displayPanel(final Map<String, Integer> result) {
-    String resultString = "";
-    Set<Map.Entry<String, Integer>> _entrySet = result.entrySet();
-    for (final Map.Entry<String, Integer> entry : _entrySet) {
-      String _resultString = resultString;
-      String _key = entry.getKey();
-      String _plus = ("var " + _key);
-      String _plus_1 = (_plus + " = ");
-      Integer _value = entry.getValue();
-      String _plus_2 = (_plus_1 + _value);
-      String _plus_3 = (_plus_2 + "\n");
-      resultString = (_resultString + _plus_3);
+  public void generateFile(final MathExp math, final IFileSystemAccess2 fsa) {
+    String _name = math.getName();
+    String _plus = ("math_expression/" + _name);
+    String _plus_1 = (_plus + ".java");
+    fsa.generateFile(_plus_1, this.generateEntity(math));
+  }
+  
+  public CharSequence generateEntity(final MathExp exp) {
+    StringConcatenation _builder = new StringConcatenation();
+    _builder.append("package math_expression;");
+    _builder.newLine();
+    _builder.append("public class ");
+    String _name = exp.getName();
+    _builder.append(_name);
+    _builder.append(" {");
+    _builder.newLineIfNotEmpty();
+    {
+      EList<VarBinding> _variables = exp.getVariables();
+      for(final VarBinding m : _variables) {
+        _builder.append("\t");
+        _builder.append("public int ");
+        String _name_1 = m.getName();
+        _builder.append(_name_1, "\t");
+        _builder.append(";");
+        _builder.newLineIfNotEmpty();
+      }
     }
-    JOptionPane.showMessageDialog(null, resultString, "Math Language", JOptionPane.INFORMATION_MESSAGE);
+    _builder.append("\t");
+    _builder.newLine();
+    _builder.newLine();
+    _builder.append("\t");
+    _builder.append("public void compute() {");
+    _builder.newLine();
+    {
+      EList<VarBinding> _variables_1 = exp.getVariables();
+      for(final VarBinding m_1 : _variables_1) {
+        _builder.append("\t\t");
+        String _name_2 = m_1.getName();
+        _builder.append(_name_2, "\t\t");
+        _builder.append(" = ");
+        Integer _get = MathGenerator.compute(exp).get(m_1.getName());
+        _builder.append(_get, "\t\t");
+        _builder.append(";");
+        _builder.newLineIfNotEmpty();
+      }
+    }
+    _builder.append("\t");
+    _builder.append("}");
+    _builder.newLine();
+    _builder.append("\t");
+    _builder.newLine();
+    _builder.newLine();
+    _builder.append("}");
+    _builder.newLine();
+    return _builder;
   }
   
   public static Map<String, Integer> compute(final MathExp math) {
